@@ -1,0 +1,12 @@
+{
+  "name": "poker-live-console",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multiplayer poker web app with login, live table sync, and camera/model ingestion endpoints.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "firebase": "^12.10.0"
+  }
+}

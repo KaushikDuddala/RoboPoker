@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poker Table Live Console</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="page-backdrop" aria-hidden="true"></div>
+
+  <header class="app-header">
+    <p class="eyebrow">Poker Ops</p>
+    <h1>Live Poker Console</h1>
+    <p class="subtitle">Multiplayer betting, show table, and camera/model card ingestion.</p>
+    <div class="session-row">
+      <span id="session-label">Not logged in</span>
+      <span id="connection-label" class="status-chip">Offline</span>
+      <button id="btn-logout" class="action ghost" type="button" hidden>Logout</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section id="auth-panel" class="panel auth-panel">
+      <h2>Welcome Back</h2>
+      <p class="auth-help">Use one account per player. You can create one in seconds.</p>
+      <div class="auth-mode-switch" role="tablist" aria-label="Auth mode">
+        <button id="auth-mode-login" class="tab is-active" type="button" data-auth-mode="login" role="tab" aria-selected="true">Login</button>
+        <button id="auth-mode-register" class="tab" type="button" data-auth-mode="register" role="tab" aria-selected="false">Create Account</button>
+      </div>
+      <div class="auth-grid">
+        <div>
+          <label for="auth-username">Username</label>
+          <input id="auth-username" type="text" maxlength="20" placeholder="player_one">
+        </div>
+        <div>
+          <label for="auth-password">Password</label>
+          <div class="inline-inputs">
+            <input id="auth-password" type="password" maxlength="100" placeholder="at least 6 chars">
+            <button id="btn-toggle-password" class="action secondary" type="button">Show</button>
+          </div>
+        </div>
+      </div>
+      <div class="button-row">
+        <button id="btn-auth-submit" class="action" type="button">Login</button>
+      </div>
+      <p id="auth-status" class="status-line"></p>
+    </section>
+
+    <section id="app-main" hidden>
+      <div class="view-switch" role="tablist" aria-label="Views">
+        <button id="tab-betting" class="tab is-active" data-view="betting" role="tab" aria-selected="true" type="button">Betting View</button>
+        <button id="tab-show" class="tab" data-view="show" role="tab" aria-selected="false" type="button">Show View + Odds</button>
+      </div>
+
+      <section id="view-betting" class="view is-active" role="tabpanel" aria-labelledby="tab-betting">
+        <div class="grid betting-grid">
+          <article class="panel">
+            <h2>Hand Status</h2>
+            <div class="stat-grid">
+              <div class="stat">
+                <span>Phase</span>
+                <strong id="phase-label">-</strong>
+              </div>
+              <div class="stat">
+                <span>Pot</span>
+                <strong id="pot-label">$0</strong>
+              </div>
+              <div class="stat">
+                <span>Current Bet</span>
+                <strong id="current-bet-label">$0</strong>
+              </div>
+              <div class="stat">
+                <span>To Act</span>
+                <strong id="to-act-label">-</strong>
+              </div>
+            </div>
+            <div class="hidden-board">
+              <p>Community Cards (hidden in betting view)</p>
+              <div id="hidden-board-cards" class="hidden-cards"></div>
+            </div>
+            <p id="table-status" class="status-line"></p>
+          </article>
+
+          <article class="panel">
+            <h2>Seats</h2>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Seat</th>
+                    <th>Player</th>
+                    <th>Stack</th>
+                    <th>In Pot</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="players-body"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel">
+            <h2>Bet Controls</h2>
+            <div class="controls">
+              <label for="raise-amount">Bet / Raise amount</label>
+              <input id="raise-amount" type="number" min="1" step="1" value="25">
+
+              <div class="button-row">
+                <button id="btn-check-call" class="action" type="button">Check / Call</button>
+                <button id="btn-raise" class="action" type="button">Bet / Raise</button>
+                <button id="btn-fold" class="action ghost" type="button">Fold</button>
+              </div>
+
+              <div class="button-row">
+                <button id="btn-next-street" class="action secondary" type="button">Advance Street</button>
+                <button id="btn-new-hand" class="action secondary" type="button">New Hand</button>
+              </div>
+
+              <!-- My Cards section -->
+<section id="my-cards-section" hidden>
+  <h3>My Hole Cards</h3>
+  <div class="my-cards-row">
+    <input id="my-card-0" class="hole-input" maxlength="2" placeholder="Ah" autocomplete="off">
+    <input id="my-card-1" class="hole-input" maxlength="2" placeholder="Kd" autocomplete="off">
+  </div>
+  <span id="my-cards-win-pct" class="win-pct-badge"></span>
+  <p id="my-cards-status" class="status-msg"></p>
+</section>
+              <p id="betting-status" class="status-line"></p>
+            </div>
+          </article>
+
+          <article class="panel">
+            <h2>Action Log</h2>
+            <ul id="action-log" class="log"></ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-show" class="view" role="tabpanel" aria-labelledby="tab-show">
+        <div class="grid show-grid">
+          <article class="panel">
+            <h2>Camera Sources</h2>
+            <div class="camera-grid">
+              <div class="camera-card">
+                <label for="robot-cam-url">Robot Hand Camera URL</label>
+                <input id="robot-cam-url" type="url" placeholder="https://...">
+                <button id="apply-robot-cam" class="action secondary" type="button">Apply</button>
+                <a id="robot-cam-link" href="#" target="_blank" rel="noreferrer">No source set</a>
+              </div>
+              <div class="camera-card">
+                <label for="board-cam-url">River/Board Camera URL</label>
+                <input id="board-cam-url" type="url" placeholder="https://...">
+                <button id="apply-board-cam" class="action secondary" type="button">Apply</button>
+                <a id="board-cam-link" href="#" target="_blank" rel="noreferrer">No source set</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <h2>Vision Ingest (Model Output)</h2>
+            <p class="helper">Robot format: <code>As,Kd</code> and board with optional slot.</p>
+            <div class="vision-grid">
+              <div>
+                <label for="vision-robot-cards">Robot detections</label>
+                <input id="vision-robot-cards" type="text" placeholder="As,Kd">
+                <button id="btn-vision-robot" class="action secondary" type="button">Send Robot Detection</button>
+              </div>
+              <div>
+                <label for="vision-board-card">Board detection</label>
+                <div class="inline-inputs">
+                  <input id="vision-board-card" type="text" maxlength="2" placeholder="7h">
+                  <input id="vision-board-slot" type="number" min="1" max="5" placeholder="slot">
+                </div>
+                <button id="btn-vision-board" class="action secondary" type="button">Send Board Detection</button>
+              </div>
+            </div>
+            <p id="vision-status" class="status-line"></p>
+          </article>
+
+          <article class="panel">
+            <h2>Card Inputs</h2>
+            <p class="helper">Manual override cards like <code>As</code>, <code>Td</code>, <code>7h</code>, <code>Kc</code>.</p>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Seat</th>
+                    <th>Player</th>
+                    <th>Card 1</th>
+                    <th>Card 2</th>
+                  </tr>
+                </thead>
+                <tbody id="hole-input-body"></tbody>
+              </table>
+            </div>
+            <div class="board-input-wrap">
+              <p>Board Cards</p>
+              <div id="board-inputs" class="board-inputs"></div>
+            </div>
+            <div class="button-row">
+              <button id="btn-random-hand" class="action secondary" type="button">Random Demo Hand</button>
+              <button id="btn-clear-cards" class="action ghost" type="button">Clear Cards</button>
+            </div>
+            <p id="cards-status" class="status-line"></p>
+          </article>
+
+          <article class="panel">
+            <h2>Show Table</h2>
+            <div class="show-board">
+              <p>Board</p>
+              <div id="show-board-cards" class="show-cards"></div>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Seat</th>
+                    <th>Player</th>
+                    <th>Cards</th>
+                    <th>State</th>
+                    <th>Best 5</th>
+                  </tr>
+                </thead>
+                <tbody id="show-player-body"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel">
+            <h2>Win Odds</h2>
+            <div class="odds-controls">
+              <label for="sim-count">Simulations</label>
+              <input id="sim-count" type="number" min="200" max="30000" step="100" value="3000">
+              <button id="btn-run-odds" class="action" type="button">Run Odds</button>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Player</th>
+                    <th>Win %</th>
+                    <th>Equity %</th>
+                  </tr>
+                </thead>
+                <tbody id="odds-body"></tbody>
+              </table>
+            </div>
+            <p id="odds-status" class="status-line"></p>
+          </article>
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
